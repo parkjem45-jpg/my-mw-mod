@@ -18,7 +18,7 @@ LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/imgui \
     $(LOCAL_PATH)/imgui/backends
 
-LOCAL_LDLIBS := -llog -landroid -lEGL -lGLESv2 -L$(LOCAL_PATH) -ldobby
+LOCAL_LDLIBS := -llog -landroid -lEGL -lGLESv2 -lGLESv3 -L$(LOCAL_PATH) -ldobby
 
 LOCAL_CPPFLAGS := -std=c++17 -fno-exceptions -fno-rtti -DIMGUI_IMPL_OPENGL_ES3
 
