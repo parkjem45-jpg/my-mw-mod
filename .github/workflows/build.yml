@@ -43,12 +43,13 @@ jobs:
 
       - name: Prepare zip package
         run: |
-          mkdir -p module_package/zygisk/arm64-v8a
-          cp app/src/main/libs/arm64-v8a/libmw_mod.so module_package/zygisk/arm64-v8a/
+          mkdir -p module_package/zygisk
+          cp app/src/main/libs/arm64-v8a/libmw_mod.so module_package/zygisk/arm64-v8a.so
           cp module/module.prop module_package/
           cp module/customize.sh module_package/
-          cd module_package
-          zip -r ../ModernWarships_ImGui_Menu.zip .
+          cd module_package && zip -r ../ModernWarships_ImGui_Menu.zip ./*
+          cd ..
+          unzip -l ModernWarships_ImGui_Menu.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

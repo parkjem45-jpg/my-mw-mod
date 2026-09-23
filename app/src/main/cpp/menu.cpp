@@ -110,3 +110,11 @@ void Menu::Shutdown() {
     ImGui_ImplAndroid_Shutdown();
     ImGui::DestroyContext();
 }
+
+void Menu::SetDisplaySize(float w, float h) {
+    if (ImGui::GetCurrentContext() == nullptr) {
+        return;
+    }
+    ImGuiIO &io = ImGui::GetIO();
+    io.DisplaySize = ImVec2(w, h);
+}
