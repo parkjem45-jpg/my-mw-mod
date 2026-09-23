@@ -1,0 +1,80 @@
+# === ANDROID BUILD ===
+app/build/
+app/**/build/
+*/build/
+build/
+
+# Gradle
+.gradle/
+gradle-app.setting
+gradle-app.properties
+
+# Local config
+local.properties
+
+# === ANDROID GENERATED ===
+*.apk
+*.ap_
+*.dex
+*.class
+
+# Android AAPT, ProGuard, Mapping
+*.aapt
+*.aapt_rules.txt
+*.pro
+*.prof
+*.proguard
+*.proguard.map
+proguard/
+proguard-rules.pro
+app/proguard-resources.json
+app/resource_mapping.txt
+stringFogMapping.txt
+
+# === INTERMEDIATES ===
+intermediates/
+app/**/intermediates/
+*/intermediates/
+
+# gen folder
+gen/
+app/gen/
+
+# bin folder
+bin/
+app/bin/
+
+# === OBJECT FILES ===
+*.o
+*.obj
+
+# === NDK BUILD TEMP ===
+app/src/main/obj/
+app/src/main/obj/local/
+*.so.d
+*.log
+
+# Keep jniLibs
+!app/src/main/jniLibs/
+
+# === C++ / NDK CACHE ===
+# KHÔNG ignore *.a vì repo cần các static library
+*.so
+*.so.*
+*.ko
+
+# IDE / AIDE specific
+.idea/
+*.iml
+*.swp
+*.swo
+*.orig
+
+# Misc
+*.tmp
+*.temp
+.DS_Store
+.env
+
+!public/
+!public/**
