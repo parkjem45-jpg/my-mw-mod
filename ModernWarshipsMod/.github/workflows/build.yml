@@ -23,7 +23,9 @@ jobs:
 
       - name: Setup NDK r27b
         run: |
-          sdkmanager "ndk;27.2.12479018"
+          export SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "ndk;27.2.12479018"
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
 
       - name: Verify vendored dependencies
