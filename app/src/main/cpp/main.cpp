@@ -2,6 +2,8 @@
 #include <thread>
 #include <unistd.h>
 #include <dlfcn.h>
+#include <cstdio>
+#include <cstdint>
 #include <android/log.h>
 #include <cstring>
 
@@ -15,7 +17,30 @@
 static constexpr const char *kGamePackage = "com.Shooter.ModernWarships";
 static JNIEnv *g_Env = nullptr;
 
+static uintptr_t getModuleBase(const char *libName) {
+    FILE *fp = fopen("/proc/self/maps", "r");
+    if (!fp) return 0;
+    char line[1024];
+    uintptr_t base = 0;
+    while (fgets(line, sizeof(line), fp)) {
+        if (strstr(line, libName)) {
+            // line format: start-end perms ...
+            char *dash = strchr(line, '-');
+            if (dash) {
+                *dash = '\0';
+                unsigned long addr = 0;
+                sscanf(line, "%lx", &addr);
+                base = static_cast<uintptr_t>(addr);
+                break;
+            }
+        }
+    }
+    fclose(fp);
+    return base;
+}
+
 static void hackThread() {
+    // Wait for libil2cpp.so to load
     void *handle = nullptr;
     while (handle == nullptr) {
         handle = dlopen("libil2cpp.so", RTLD_NOLOAD | RTLD_NOW);
@@ -23,8 +48,16 @@ static void hackThread() {
             usleep(100000);
         }
     }
+    dlclose(handle);
 
-    uintptr_t libBase = reinterpret_cast<uintptr_t>(handle);
+    // Get real base address from /proc/self/maps (dlopen handle is NOT the base)
+    uintptr_t libBase = 0;
+    while (libBase == 0) {
+        libBase = getModuleBase("libil2cpp.so");
+        if (libBase == 0) {
+            usleep(100000);
+        }
+    }
     LOGI("libil2cpp.so loaded at 0x%lx", libBase);
     g_LibBase = libBase;
 

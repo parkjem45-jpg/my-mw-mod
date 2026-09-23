@@ -1,5 +1,6 @@
 #include "hooks.h"
 #include "offsets.h"
+#include "dobby.h"
 #include <android/log.h>
 #include <cstring>
 
