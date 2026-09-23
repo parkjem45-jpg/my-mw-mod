@@ -1,0 +1,63 @@
+name: Build ModernWarships Mod (Zygisk)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'ModernWarshipsMod/**'
+      - '.github/workflows/build-mod.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup NDK r27b
+        run: |
+          sdkmanager "ndk;27.2.12479018"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
+
+      - name: Verify vendored dependencies
+        run: |
+          ls ModernWarshipsMod/app/src/main/cpp/imgui/*.cpp
+          ls ModernWarshipsMod/app/src/main/cpp/imgui/backends/
+          ls ModernWarshipsMod/app/src/main/cpp/libdobby.a
+          ls ModernWarshipsMod/app/src/main/cpp/zygisk.hpp
+
+      - name: Build native library
+        run: |
+          $ANDROID_NDK_HOME/ndk-build NDK_PROJECT_PATH=ModernWarshipsMod/app/src/main \
+            APP_BUILD_SCRIPT=ModernWarshipsMod/app/src/main/cpp/Android.mk \
+            NDK_APPLICATION_MK=ModernWarshipsMod/app/src/main/cpp/Application.mk
+
+      - name: Prepare zip package
+        run: |
+          mkdir -p module_package/zygisk/arm64-v8a
+          cp ModernWarshipsMod/app/src/main/libs/arm64-v8a/libmw_mod.so module_package/zygisk/arm64-v8a/
+          cp ModernWarshipsMod/module/module.prop module_package/
+          cp ModernWarshipsMod/module/customize.sh module_package/
+          cd module_package
+          zip -r ../ModernWarships_ImGui_Menu.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ModernWarships-Mod-Menu
+          path: ModernWarships_ImGui_Menu.zip
