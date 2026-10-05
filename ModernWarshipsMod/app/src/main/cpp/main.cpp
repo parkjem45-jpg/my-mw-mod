@@ -41,17 +41,10 @@ static uintptr_t getModuleBase(const char *libName) {
 }
 
 static void hackThread() {
-    // Wait for libil2cpp.so to load
-    void *handle = nullptr;
-    while (handle == nullptr) {
-        handle = dlopen("libil2cpp.so", RTLD_NOLOAD | RTLD_NOW);
-        if (handle == nullptr) {
-            usleep(100000);
-        }
-    }
-    dlclose(handle);
-
-    // Get real base address from /proc/self/maps (dlopen handle is NOT the base)
+    // Wait for libil2cpp.so to appear in our mappings. The base address is
+    // read from /proc/self/maps: a dlopen() handle is NOT the module base,
+    // and dlclose() on an RTLD_NOLOAD handle can drop a refcount we don't
+    // own, so neither is used here.
     uintptr_t libBase = 0;
     while (libBase == 0) {
         libBase = getModuleBase("libil2cpp.so");
@@ -59,7 +52,24 @@ static void hackThread() {
             usleep(100000);
         }
     }
-    LOGI("libil2cpp.so loaded at 0x%lx", (unsigned long)libBase);
+    LOGI("libil2cpp.so mapped at 0x%lx, waiting for linker to settle...", (unsigned long)libBase);
+
+    // The library can be mapped but not yet relocated/constructed. Hooking
+    // or reading its code pages this early races the linker and faults.
+    // Wait, then re-resolve the base in case anything moved.
+    sleep(5);
+    libBase = 0;
+    for (int i = 0; i < 50 && libBase == 0; i++) {
+        libBase = getModuleBase("libil2cpp.so");
+        if (libBase == 0) {
+            usleep(100000);
+        }
+    }
+    if (libBase == 0) {
+        LOGI("libil2cpp.so base lost after settle wait, aborting");
+        return;
+    }
+    LOGI("libil2cpp.so settled at 0x%lx", (unsigned long)libBase);
     g_LibBase = libBase;
 
     InitHooks(libBase);

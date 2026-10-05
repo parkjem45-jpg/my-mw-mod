@@ -4,6 +4,7 @@
 #include <android/log.h>
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
+#include <time.h>
 
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
@@ -20,6 +21,14 @@ void Menu::Init() {
     ImGuiIO &io = ImGui::GetIO();
     io.IniFilename = nullptr;
 
+    // Sane default until the EGL hook reports the real surface size.
+    // (SetDisplaySize() keeps this in sync every frame after that.)
+    io.DisplaySize = ImVec2(1280.0f, 720.0f);
+
+    // NOTE: the Android backend is initialized with a null ANativeWindow
+    // because Zygisk has none. Its NewFrame() would call
+    // ANativeWindow_getWidth(nullptr) and SIGSEGV, so Render() never calls
+    // it -- display size and delta time are maintained manually below.
     ImGui_ImplAndroid_Init(nullptr);
     ImGui_ImplOpenGL3_Init("#version 300 es");
 
@@ -56,7 +65,24 @@ void Menu::Render() {
     }
 
     ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplAndroid_NewFrame();
+    // Do NOT call ImGui_ImplAndroid_NewFrame(): with a null ANativeWindow it
+    // dereferences nullptr and crashes. Maintain io state manually instead.
+    {
+        ImGuiIO &io = ImGui::GetIO();
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        double now = (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+        static double last = 0.0;
+        io.DeltaTime = last > 0.0 ? (float)(now - last) : (1.0f / 60.0f);
+        if (io.DeltaTime <= 0.0f) {
+            io.DeltaTime = 1.0f / 60.0f;
+        }
+        last = now;
+        // DisplaySize is owned by SetDisplaySize(); never let it stay 0.
+        if (io.DisplaySize.x <= 0.0f || io.DisplaySize.y <= 0.0f) {
+            io.DisplaySize = ImVec2(1280.0f, 720.0f);
+        }
+    }
     ImGui::NewFrame();
 
     if (isMinimized) {
